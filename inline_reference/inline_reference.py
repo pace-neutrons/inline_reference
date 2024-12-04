@@ -4,7 +4,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 import warnings
 
-from numpy.random import randint
+from random import randint
 
 from docutils import nodes
 
@@ -20,7 +20,8 @@ if TYPE_CHECKING:
     from sphinx.builders import Builder
 
 
-MAX = int(2 ** 31)
+def rand_token() -> str:
+    return str(randint(0, 2 ** 60))
 
 
 class id_reference(nodes.reference):
@@ -261,9 +262,9 @@ class InlineReferenceDomain(Domain):
             reference_node = make_refnode(builder, fromdocname, todocname, targ, contnode, targ)
 
         try:
-            reference_node['ids'].append(targ + '-' + str(randint(MAX)))
+            reference_node['ids'].append(targ + '-' + rand_token())
         except KeyError:
-            reference_node['ids'] = [targ + '-' + str(randint(MAX))]
+            reference_node['ids'] = [targ + '-' + rand_token()]
 
         return reference_node
 
@@ -334,11 +335,10 @@ def process_mutual_reference_nodes(app: Sphinx, doctree, fromdocname) -> None:
             warnings.warn(f'mutual reference "{pair[0]["ids"][0]}" does not have a pair', Warning)
             continue
 
-        add1, add2 = randint(MAX), randint(MAX)
         node1, node2 = pair[0], pair[1]
 
-        node1['ids'][0] += '-' + str(add1)
-        node2['ids'][0] += '-' + str(add2)
+        node1['ids'][0] += '-' + str(rand_token())
+        node2['ids'][0] += '-' + str(rand_token())
 
         node1['refid'] = node2['ids'][0]
         node2['refid'] = node1['ids'][0]
