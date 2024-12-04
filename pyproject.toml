@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = 'resolutions_functions'
+version = "0.1.0"
+authors = [
+    {name = "Rastislav Turanyi", email = "rastislav.turanyi@stfc.ac.uk"},
+]
+maintainers = [
+    {name = "Rastislav Turanyi", email = "rastislav.turanyi@stfc.ac.uk"},
+]
+description = "Sphinx extension for creating cross-reference links to arbitrary inline text"
+readme = "README.md"
+license = {file = "LICENSE"}
+
+dependencies = [
+    "sphinx >= 8.1.3",
+]
+
+[project.urls]
+Repository = "https://github.com/pace-neutrons/inline_reference"
