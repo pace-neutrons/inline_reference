@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = 'resolutions_functions'
+name = 'inline_reference'
 version = "0.1.0"
 authors = [
     {name = "Rastislav Turanyi", email = "rastislav.turanyi@stfc.ac.uk"},
