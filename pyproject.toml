@@ -19,5 +19,13 @@ dependencies = [
     "sphinx >= 8.1.3",
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest >= 8.3.2",
+]
+docs = [
+    "sphinx_rtd_theme >= 3.0.2",
+]
+
 [project.urls]
 Repository = "https://github.com/pace-neutrons/inline_reference"

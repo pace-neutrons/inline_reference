@@ -326,7 +326,6 @@ def process_mutual_reference_nodes(app: Sphinx, doctree, fromdocname) -> None:
             paired_nodes[node['ids'][0]] = [node]
 
     for name, pair in paired_nodes.items():
-        print(pair)
         if len(pair) > 2:
             warnings.warn(f'mutual reference "{pair[0]["ids"][0]}" has more than two uses. This '
                           f'could be because it was used more than twice, or because of issues '
