@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 
 def rand_token() -> str:
+    """Creates a random token between 0 and $2^{60)}$."""
     return str(randint(0, 2 ** 60))
 
 
@@ -63,12 +64,12 @@ class mutual_ref(nodes.General,
     pass
 
 
-def visit_mutual_ref_node(self, node):
+def visit_reference_node_default(self, node):
     """Visit `mutual_ref`."""
     self.visit_reference(node)
 
 
-def depart_mutual_ref_node(self, node):
+def depart_reference_node_default(self, node):
     """Depart `mutual_ref`"""
     self.depart_reference(node)
 
@@ -388,13 +389,15 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     app.add_domain(InlineReferenceDomain)
 
     app.add_node(reference_target,
-                 html=(visit_reference_target_node_html, depart_reference_target_node_html))
+                 html=(visit_reference_target_node_html, depart_reference_target_node_html),
+                 text=(visit_reference_node_default, depart_reference_node_default))
     app.add_node(mutual_ref,
-                 html=(visit_mutual_ref_node, depart_mutual_ref_node),
-                 latex=(visit_mutual_ref_node, depart_mutual_ref_node),
-                 text=(visit_mutual_ref_node, depart_mutual_ref_node))
+                 html=(visit_reference_node_default, depart_reference_node_default),
+                 latex=(visit_reference_node_default, depart_reference_node_default),
+                 text=(visit_reference_node_default, depart_reference_node_default))
     app.add_node(backlink,
-                 html=(visit_backlink_node_html, depart_backlink_node_html))
+                 html=(visit_backlink_node_html, depart_backlink_node_html),
+                 text=(visit_reference_node_default, depart_reference_node_default))
 
     app.connect('doctree-resolved', process_mutual_reference_nodes)
     app.connect('doctree-resolved', process_backlink_nodes)

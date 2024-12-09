@@ -66,7 +66,7 @@ def mask_random_ids(lines: list[str]) -> list[str]:
 
 
 @pytest.mark.sphinx("html", testroot="integration")
-def test_integration(app, status):
+def test_integration_html(app, status):
     root_dir = path(__file__).parent.abspath()
 
     app.build()
@@ -76,3 +76,16 @@ def test_integration(app, status):
     expected = clean_up((root_dir / 'roots' / 'test-integration' / "expected.html").read_text())
 
     assert mask_random_ids(remove_edges(result)) == mask_random_ids(remove_edges(expected))
+
+
+@pytest.mark.sphinx("text", testroot="integration")
+def test_integration_text(app, status):
+    root_dir = path(__file__).parent.abspath()
+
+    app.build()
+    assert "build succeeded" in status.getvalue()  # Build succeeded
+
+    result = (Path(app.srcdir) / "_build/text/test.txt").read_text()
+    expected = (root_dir / 'roots' / 'test-integration' / "expected.txt").read_text()
+
+    assert result == expected
