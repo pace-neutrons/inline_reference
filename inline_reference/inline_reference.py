@@ -55,6 +55,16 @@ def make_id_refnode(
     return node
 
 
+def visit_reference_node_default(self, node):
+    """Visit the default reference node in any builder."""
+    self.visit_reference(node)
+
+
+def depart_reference_node_default(self, node):
+    """Depart the default reference node in any builder."""
+    self.depart_reference(node)
+
+
 class mutual_ref(nodes.General,
                  nodes.BackLinkable,
                  nodes.TextElement,
@@ -64,14 +74,18 @@ class mutual_ref(nodes.General,
     pass
 
 
-def visit_reference_node_default(self, node):
-    """Visit `mutual_ref`."""
-    self.visit_reference(node)
+def visit_mutual_ref_node_latex(self, node):
+    """Visits the `mutual_ref` node for the LaTeX builder."""
+    id = self.curfilestack[-1] + ':' + node['ids'][0]
+    escaped_id = str(self.idescape(id))
+
+    ref_id = str(self.idescape(self.curfilestack[-1] + ':' + node['refid']))
+    self.body.append(r'\hyperlink{' + ref_id + r'}{\hypertarget{' + escaped_id + r'}{')
 
 
-def depart_reference_node_default(self, node):
-    """Depart `mutual_ref`"""
-    self.depart_reference(node)
+def depart_mutual_ref_node_latex(self, node):
+    """Departs the `mutual_ref` node for the LaTeX builder."""
+    self.body.append(r'}}')
 
 
 class MutualReference(SphinxRole):
@@ -111,8 +125,18 @@ def visit_reference_target_node_html(self, node):
 
 
 def depart_reference_target_node_html(self, node):
-    """Depart `reference_target`."""
+    """Depart `reference_target` for HTML writer."""
     self.body.append('</a>')
+
+
+def visit_reference_target_node_latex(self, node):
+    """Visit `reference_target`for LaTeX writer."""
+    self.body.append(self.hypertarget_to(node, False))
+
+
+def depart_reference_target_node_latex(self, node):
+    """Depart `reference_target` for LaTeX writer."""
+    pass
 
 
 class backlink(nodes.TextElement, nodes.Targetable, nodes.Inline, nodes.BackLinkable):
@@ -121,7 +145,7 @@ class backlink(nodes.TextElement, nodes.Targetable, nodes.Inline, nodes.BackLink
 
 
 def visit_backlink_node_html(self, node):
-    """Visit `backlink`."""
+    """Visit `backlink` for HTML writer."""
     backrefs = node.get('backrefs', [])
 
     if len(backrefs) == 1:
@@ -133,7 +157,7 @@ def visit_backlink_node_html(self, node):
 
 
 def depart_backlink_node_html(self, node):
-    """Depart `backlink`."""
+    """Depart `backlink` for HTML writer."""
     backrefs = node.get('backrefs', [])
 
     if len(backrefs) == 1:
@@ -141,6 +165,33 @@ def depart_backlink_node_html(self, node):
     elif len(backrefs) > 1:
         elements = [f'<a href=#{ref}><sub>{i}</sub></a>' for i, ref in enumerate(backrefs)]
         self.body.append(','.join(elements))
+
+
+def visit_backlink_node_latex(self, node):
+    """Visit `backlink` for LaTeX writer."""
+    backrefs = node.get('backrefs', [])
+
+    if len(backrefs) == 1:
+        node['refid'] = backrefs[0]
+        visit_mutual_ref_node_latex(self, node)
+    else:
+        id = str(self.idescape(self.curfilestack[-1] + ':' + node['ids'][0]))
+        self.body.append(r'\hypertarget{' + id + '}{')
+
+
+def depart_backlink_node_latex(self, node):
+    """Depart `backlink` for LaTeX writer."""
+    backrefs = node.get('backrefs', [])
+
+    if len(backrefs) == 1:
+        depart_mutual_ref_node_latex(self, node)
+    else:
+        elements = []
+        for i, ref in enumerate(backrefs):
+            ref_id = str(self.idescape(self.curfilestack[-1] + ':' + ref))
+            elements.append(r'\hyperlink{' + ref_id + '}{' + str(i) + '}')
+
+        self.body.append('}_{' + ','.join(elements) + '}')
 
 
 class Target(SphinxRole):
@@ -225,9 +276,6 @@ class InlineReferenceDomain(Domain):
         'backlink': BackLink(),
         'mref': MutualReference(),
     }
-    # directives = {
-    #     'recipe': RecipeDirective,
-    # }
     indices = {
         LooseRefIndex,
     }
@@ -388,16 +436,22 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     """Plugs the extension into Sphinx."""
     app.add_domain(InlineReferenceDomain)
 
+    app.add_node(id_reference,
+                 html=(visit_reference_node_default, depart_reference_node_default),
+                 text=(visit_reference_node_default, depart_reference_node_default),
+                 latex=(visit_mutual_ref_node_latex, depart_mutual_ref_node_latex))
     app.add_node(reference_target,
                  html=(visit_reference_target_node_html, depart_reference_target_node_html),
-                 text=(visit_reference_node_default, depart_reference_node_default))
+                 text=(visit_reference_node_default, depart_reference_node_default),
+                 latex=(visit_reference_target_node_latex, depart_reference_target_node_latex))
     app.add_node(mutual_ref,
                  html=(visit_reference_node_default, depart_reference_node_default),
                  latex=(visit_reference_node_default, depart_reference_node_default),
                  text=(visit_reference_node_default, depart_reference_node_default))
     app.add_node(backlink,
                  html=(visit_backlink_node_html, depart_backlink_node_html),
-                 text=(visit_reference_node_default, depart_reference_node_default))
+                 text=(visit_reference_node_default, depart_reference_node_default),
+                 latex=(visit_backlink_node_latex, depart_backlink_node_latex))
 
     app.connect('doctree-resolved', process_mutual_reference_nodes)
     app.connect('doctree-resolved', process_backlink_nodes)
