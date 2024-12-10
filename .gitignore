@@ -6,6 +6,7 @@ __pycache__/
 .idea
 
 docs/source/test.rst
+docs/source/test_crosspage.rst
 
 # C extensions
 *.so

@@ -42,29 +42,6 @@ def remove_edges(lines: list[str]) -> list[str]:
     return lines[i:-j]
 
 
-def mask_random_ids(lines: list[str]) -> list[str]:
-    num = 1
-    map = {}
-    for i, line in enumerate(lines):
-        regex = r'(?:\blooseref\b|\bbacklink\b|\bmutual\b)-[bm]?id[0-9]+-([0-9]+)"'
-        found = re.findall(r'id="' + regex, line)
-        found.extend(re.findall(r'href="?#' + regex + '?', line))
-
-        for match in found:
-            try:
-                n = map[match]
-            except KeyError:
-                map[match] = num
-                n = num
-                num += 1
-
-            line = line.replace(match, str(n))
-
-        lines[i] = line
-
-    return lines
-
-
 @pytest.mark.sphinx("html", testroot="integration")
 def test_integration_html(app, status):
     root_dir = path(__file__).parent.abspath()
@@ -75,7 +52,11 @@ def test_integration_html(app, status):
     result = clean_up((Path(app.srcdir) / "_build/html/test.html").read_text())
     expected = clean_up((root_dir / 'roots' / 'test-integration' / "expected.html").read_text())
 
-    assert mask_random_ids(remove_edges(result)) == mask_random_ids(remove_edges(expected))
+    result_crosspage = clean_up((Path(app.srcdir) / "_build/html/test_crosspage.html").read_text())
+    expected_crosspage = clean_up((root_dir / 'roots' / 'test-integration' / "expected_crosspage.html").read_text())
+
+    assert remove_edges(result) == remove_edges(expected)
+    assert remove_edges(result_crosspage) == remove_edges(expected_crosspage)
 
 
 @pytest.mark.sphinx("text", testroot="integration")
@@ -88,4 +69,8 @@ def test_integration_text(app, status):
     result = (Path(app.srcdir) / "_build/text/test.txt").read_text()
     expected = (root_dir / 'roots' / 'test-integration' / "expected.txt").read_text()
 
+    result_crosspage = (Path(app.srcdir) / "_build/text/test_crosspage.txt").read_text()
+    expected_crosspage = (root_dir / 'roots' / 'test-integration' / "expected_crosspage.txt").read_text()
+
     assert result == expected
+    assert result_crosspage == expected_crosspage

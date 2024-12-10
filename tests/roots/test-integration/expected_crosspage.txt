@@ -1,0 +1,10 @@
+Another Title
+*************
+
+Testing:
+
+* "id1"
+
+* mref to other document
+
+* "bid4"
