@@ -4,8 +4,6 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 import warnings
 
-from random import randint
-
 from docutils import nodes
 
 from sphinx.application import Sphinx
@@ -18,11 +16,6 @@ from sphinx.util.nodes import make_refnode
 
 if TYPE_CHECKING:
     from sphinx.builders import Builder
-
-
-def rand_token() -> str:
-    """Creates a random token between 0 and $2^{60)}$."""
-    return str(randint(0, 2 ** 60))
 
 
 class id_reference(nodes.reference):
@@ -307,13 +300,13 @@ class InlineReferenceDomain(Domain):
         # Backlinks require the id param in order to be able to be linked back to
         if match[-1][2] == 'backlink':
             reference_node = make_id_refnode(builder, fromdocname, todocname, targ, contnode, targ)
+
+            try:
+                reference_node['ids'].append(targ + '-ref' + str(env.new_serialno()))
+            except KeyError:
+                reference_node['ids'] = [targ + '-ref' + str(env.new_serialno())]
         else:
             reference_node = make_refnode(builder, fromdocname, todocname, targ, contnode, targ)
-
-        try:
-            reference_node['ids'].append(targ + '-' + rand_token())
-        except KeyError:
-            reference_node['ids'] = [targ + '-' + rand_token()]
 
         return reference_node
 
@@ -385,8 +378,8 @@ def process_mutual_reference_nodes(app: Sphinx, doctree, fromdocname) -> None:
 
         node1, node2 = pair[0], pair[1]
 
-        node1['ids'][0] += '-' + str(rand_token())
-        node2['ids'][0] += '-' + str(rand_token())
+        node1['ids'][0] += '-1'
+        node2['ids'][0] += '-2'
 
         node1['refid'] = node2['ids'][0]
         node2['refid'] = node1['ids'][0]
@@ -415,10 +408,7 @@ def process_backlink_nodes(app: Sphinx, doctree, fromdocname) -> None:
     for node in doctree.findall(backlink):
         backlinks[node['ids'][0]] = node
 
-    for ref_node in doctree.findall(nodes.reference):
-        if not isinstance(ref_node, id_reference):
-            continue
-
+    for ref_node in doctree.findall(id_reference):
         try:
             bln = backlinks[ref_node['refid']]
         except KeyError:
