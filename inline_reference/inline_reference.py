@@ -102,7 +102,7 @@ class MutualReference(SphinxRole):
         domain: InlineReferenceDomain = self.env.get_domain('iref')
         anchor = domain.add_mutual_reference(signature)
 
-        node = mutual_ref(text=text, refid=anchor, ids=[anchor], title=text)
+        node = mutual_ref(text=text, refid=anchor, ids=[signature, anchor], title=text)
 
         return [node], []
 
@@ -288,7 +288,7 @@ class InlineReferenceDomain(Domain):
 
     def add_mutual_reference(self, signature: str) -> str:
         """Adds a mutual reference to the domain."""
-        id = f'{signature}-id{self.env.new_serialno(signature)}'
+        id = f'{self.env.docname}-{signature}-id{self.env.new_serialno(signature)}'
 
         data = (signature, self.env.docname, id)
 
@@ -330,7 +330,7 @@ def process_mutual_reference_nodes(app: Sphinx, doctree, fromdocname) -> None:
     domain: InlineReferenceDomain = app.builder.env.get_domain('iref')
 
     for node in doctree.findall(mutual_ref):
-        anchor = '-'.join(node['ids'][0].split('-')[:-1])
+        anchor = node['ids'].pop(0)
 
         mutual_nodes = domain.data['mutual_refs'][anchor]
 
@@ -342,28 +342,15 @@ def process_mutual_reference_nodes(app: Sphinx, doctree, fromdocname) -> None:
             warnings.warn(f'mutual reference "{anchor}" does not have a pair', Warning)
             continue
 
-        doc1, doc2 = mutual_nodes[0][1], mutual_nodes[1][1]
-
-        if doc1 == doc2:
-            if mutual_nodes[0][2] == node['ids'][0]:
-                this_node, other_node = 0, 1
-            elif mutual_nodes[1][2] == node['ids'][0]:
-                this_node, other_node = 1, 0
-            else:
-                warnings.warn(f'mutual reference "{anchor}" is not mutually matching up: both '
-                              f'{mutual_nodes[0][2]} and {mutual_nodes[0][2]} != {node["ids"][0]}',
-                              Warning)
-                continue
+        if mutual_nodes[0][2] == node['ids'][0]:
+            this_node, other_node = 0, 1
+        elif mutual_nodes[1][2] == node['ids'][0]:
+            this_node, other_node = 1, 0
         else:
-            if doc1 == fromdocname:
-                this_node, other_node = 0, 1
-            elif doc2 == fromdocname:
-                this_node, other_node = 1, 0
-            else:
-                warnings.warn(f'mutual reference "{anchor}" is not is not mutually matching up: '
-                              f'neither mutual reference is from {fromdocname}: one is from '
-                              f'{doc1} while the other is from {doc2}.')
-                continue
+            warnings.warn(f'mutual reference "{anchor}" is not mutually matching up: both '
+                          f'{mutual_nodes[0][2]} and {mutual_nodes[0][2]} != {node["ids"][0]}',
+                          Warning)
+            continue
 
         from_doc, to_doc = mutual_nodes[this_node][1], mutual_nodes[other_node][1]
 
