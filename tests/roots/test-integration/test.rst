@@ -26,7 +26,7 @@ pellentesque sapien ultricies ut. Donec nunc ante, volutpat nec sem eu, maximus 
 quis suscipit nunc. Pellentesque consectetur, felis vestibulum aliquet fermentum, velit nunc
 pharetra tortor, eu lobortis risus turpis a risus. Aenean pharetra semper gravida. Nam non urna
 libero. Nullam sed purus feugiat, viverra quam ac, tempus libero. Curabitur iaculis ipsum pretium
-nunc ultrices, nec pretium sapien suscipit.
+nunc ultrices, nec pretium sapien suscipit. :iref:mref:`mref to other document<mid99>`
 
 Mauris condimentum dui urna, vel cursus mauris tincidunt et.
 Morbi sed :iref:mref:`mid7<mid7>` leo. :iref:ref:`id10<id10>`
@@ -173,7 +173,7 @@ Note
     Aliquam erat :iref:ref:`id2<id2>`. Nunc sit :iref:ref:`id5<id5>` ligula varius, maximus
     :iref:ref:`id8<id8>`, :iref:ref:`id9<id9>` :iref:ref:`id10<id10>`. Integer odio
     :iref:target:`id11<id11>`, placerat id :iref:backlink:`bid6<bid6>` ac, euismod quis ligula.
-    :iref:ref:`bid1<bid1>` nisi :iref:ref:`bid2<bid2>`, porta :iref:ref:`dictum<bid4>` nulla
+    :iref:ref:`bid1<bid1>` nisi :iref:ref:`bid2<bid2>`, porta :iref:ref:`bid4<bid4>` nulla
     commodo, :iref:mref:`mid8 mid8<mid8>` sodales neque. Cras blandit commodo tristique. Maecenas a
     :iref:mref:`mid9<mid9>` lacus, sed :iref:ref:`id12<id12>` orci.
     Pellentesque viverra consequat lectus, sed semper lorem eleifend non. Vestibulum hendrerit viverra

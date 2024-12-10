@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 import warnings
 
 from docutils import nodes
+from docutils.nodes import Node
 
 from sphinx.application import Sphinx
 from sphinx.domains import Domain, Index
@@ -58,6 +59,14 @@ def depart_reference_node_default(self, node):
     self.depart_reference(node)
 
 
+class RegisteredXRefRole(XRefRole):
+    def run(self) -> tuple[list[Node], list[nodes.system_message]]:
+        _, signature = self.text.replace('>', '').split('<')
+        domain: InlineReferenceDomain = self.env.get_domain('iref')
+        domain.add_loose_reference(self.env.docname, signature)
+        return super().run()
+
+
 class mutual_ref(nodes.General,
                  nodes.BackLinkable,
                  nodes.TextElement,
@@ -93,7 +102,7 @@ class MutualReference(SphinxRole):
         domain: InlineReferenceDomain = self.env.get_domain('iref')
         anchor = domain.add_mutual_reference(signature)
 
-        node = mutual_ref(text=text, ids=[anchor], title=text)
+        node = mutual_ref(text=text, refid=anchor, ids=[anchor], title=text)
 
         return [node], []
 
@@ -142,7 +151,7 @@ def visit_backlink_node_html(self, node):
     backrefs = node.get('backrefs', [])
 
     if len(backrefs) == 1:
-        atts = {'href': '#' + backrefs[0], 'classes': ['reference', 'internal']}
+        atts = {'href': backrefs[0], 'classes': ['reference', 'internal']}
 
         self.body.append(self.starttag(node, 'a', '', **atts))
     else:
@@ -156,7 +165,7 @@ def depart_backlink_node_html(self, node):
     if len(backrefs) == 1:
         self.body.append('</a>')
     elif len(backrefs) > 1:
-        elements = [f'<a href=#{ref}><sub>{i}</sub></a>' for i, ref in enumerate(backrefs)]
+        elements = [f'<a href={ref}><sub>{i}</sub></a>' for i, ref in enumerate(backrefs)]
         self.body.append(','.join(elements))
 
 
@@ -207,9 +216,9 @@ class Target(SphinxRole):
         """Creates a target node - node with ``id`` so that it can be linked to."""
         text, signature = self.text.replace('>', '').split('<')
         domain: InlineReferenceDomain = self.env.get_domain('iref')
-        anchor = domain.add_reference_target(signature, self.code)
+        domain.add_reference_target(signature, self.code)
 
-        node = self.target_class(text=text, refid=anchor, ids=[anchor], title=text)
+        node = self.target_class(text=text, refid=signature, ids=[signature], title=text)
 
         return [node], []
 
@@ -264,7 +273,7 @@ class InlineReferenceDomain(Domain):
     name = 'iref'
     label = 'Inline Reference'
     roles = {
-        'ref': XRefRole(),
+        'ref': RegisteredXRefRole(),
         'target': ReferenceTarget(),
         'backlink': BackLink(),
         'mref': MutualReference(),
@@ -273,76 +282,71 @@ class InlineReferenceDomain(Domain):
         LooseRefIndex,
     }
     initial_data = {
-        'loose_references': [],
+        'targets': [],
+        'mutual_refs': {},
+        'loose_refs': {},
     }
     data_version = 0
 
-    def get_full_qualified_name(self, node):
-        return f'iref.{node.arguments[0]}'
-
-    def get_objects(self):
-        yield from self.data['loose_references']
-
     def resolve_xref(self, env, fromdocname, builder, typ, target, node, contnode):
         match = [
-            (docname, anchor, typ2)
-            for name, sig, typ2, docname, anchor, prio in self.get_objects()
-            if sig == target and typ2 != 'mutual'
+            (sig, code, docname)
+            for sig, code, docname in self.data['targets']
+            if sig == target
         ]
 
         if len(match) == 0:
             warnings.warn(f'Reference "{target}" not found.', Warning)
             return None
 
-        todocname = match[-1][0]
-        targ = match[-1][1]
+        # todocname, targ, signature, match_type = match[-1]
+        signature, match_type, todocname = match[-1]
 
         # Backlinks require the id param in order to be able to be linked back to
-        if match[-1][2] == 'backlink':
-            reference_node = make_id_refnode(builder, fromdocname, todocname, targ, contnode, targ)
+        if match_type == 'backlink':
+            reference_node = make_id_refnode(builder, fromdocname, todocname, signature, contnode, signature)
+
+            for i, (from_doc, id, assigned) in enumerate(self.data['loose_refs'][signature]):
+                if from_doc == fromdocname and not assigned:
+                    break
+            else:
+                return reference_node
 
             try:
-                reference_node['ids'].append(targ + '-ref' + str(env.new_serialno()))
+                reference_node['ids'].append(id)
             except KeyError:
-                reference_node['ids'] = [targ + '-ref' + str(env.new_serialno())]
+                reference_node['ids'] = [id]
+
+            self.data['loose_refs'][signature][i] = (from_doc, id, True)
         else:
-            reference_node = make_refnode(builder, fromdocname, todocname, targ, contnode, targ)
+            reference_node = make_refnode(builder, fromdocname, todocname, signature, contnode, signature)
 
         return reference_node
 
     def add_mutual_reference(self, signature: str) -> str:
         """Adds a mutual reference to the domain."""
-        name = f'mutual.{signature}'
-        anchor = f'mutual-{signature}'
+        id = f'{signature}-id{self.env.new_serialno(signature)}'
 
-        # name, dispname, type, docname, anchor, priority
-        self.data['loose_references'].append((
-            name,
-            signature,
-            'mutual',
-            self.env.docname,
-            anchor,
-            0,
-        ))
+        data = (signature, self.env.docname, id)
 
-        return anchor
+        try:
+            self.data['mutual_refs'][signature].append(data)
+        except KeyError:
+            self.data['mutual_refs'][signature] = [data]
 
-    def add_reference_target(self, signature: str, code: str) -> str:
+        return id
+
+    def add_reference_target(self, signature: str, code: str) -> None:
         """Adds a target reference to the domain."""
-        name = f'{code}.{signature}'
-        anchor = f'{code}-{signature}'
+        self.data['targets'].append((signature, code, self.env.docname))
 
-        # name, dispname, type, docname, anchor, priority
-        self.data['loose_references'].append((
-            name,
-            signature,
-            code,
-            self.env.docname,
-            anchor,
-            0,
-        ))
-
-        return anchor
+    def add_loose_reference(self, from_doc: str, target_signature: str) -> None:
+        """Adds a `RegisteredXRefRole` to the domain."""
+        id = f'{target_signature}-ref{self.env.new_serialno()}'
+        try:
+            self.data['loose_refs'][target_signature].append((from_doc, id, False))
+        except KeyError:
+            self.data['loose_refs'][target_signature] = [(from_doc, id, False)]
 
 
 def process_mutual_reference_nodes(app: Sphinx, doctree, fromdocname) -> None:
@@ -360,32 +364,51 @@ def process_mutual_reference_nodes(app: Sphinx, doctree, fromdocname) -> None:
     fromdocname
         The name of the document calling this function.
     """
-    paired_nodes = {}
-    for node in doctree.findall(mutual_ref):
-        try:
-            paired_nodes[node['ids'][0]].append(node)
-        except KeyError:
-            paired_nodes[node['ids'][0]] = [node]
+    domain: InlineReferenceDomain = app.builder.env.get_domain('iref')
 
-    for name, pair in paired_nodes.items():
-        if len(pair) > 2:
-            warnings.warn(f'mutual reference "{pair[0]["ids"][0]}" has more than two uses. This '
+    for node in doctree.findall(mutual_ref):
+        anchor = '-'.join(node['ids'][0].split('-')[:-1])
+
+        mutual_nodes = domain.data['mutual_refs'][anchor]
+
+        if len(mutual_nodes) > 2:
+            warnings.warn(f'mutual reference "{anchor}" has more than two uses. This '
                           f'could be because it was used more than twice, or because of issues '
                           f'across multiple files.', Warning)
-        elif len(pair) < 2:
-            warnings.warn(f'mutual reference "{pair[0]["ids"][0]}" does not have a pair', Warning)
+        elif len(mutual_nodes) < 2:
+            warnings.warn(f'mutual reference "{anchor}" does not have a pair', Warning)
             continue
 
-        node1, node2 = pair[0], pair[1]
+        doc1, doc2 = mutual_nodes[0][1], mutual_nodes[1][1]
 
-        node1['ids'][0] += '-1'
-        node2['ids'][0] += '-2'
+        if doc1 == doc2:
+            if mutual_nodes[0][2] == node['ids'][0]:
+                this_node, other_node = 0, 1
+            elif mutual_nodes[1][2] == node['ids'][0]:
+                this_node, other_node = 1, 0
+            else:
+                warnings.warn(f'mutual reference "{anchor}" is not mutually matching up: both '
+                              f'{mutual_nodes[0][2]} and {mutual_nodes[0][2]} != {node["ids"][0]}',
+                              Warning)
+                continue
+        else:
+            if doc1 == fromdocname:
+                this_node, other_node = 0, 1
+            elif doc2 == fromdocname:
+                this_node, other_node = 1, 0
+            else:
+                warnings.warn(f'mutual reference "{anchor}" is not is not mutually matching up: '
+                              f'neither mutual reference is from {fromdocname}: one is from '
+                              f'{doc1} while the other is from {doc2}.')
+                continue
 
-        node1['refid'] = node2['ids'][0]
-        node2['refid'] = node1['ids'][0]
+        from_doc, to_doc = mutual_nodes[this_node][1], mutual_nodes[other_node][1]
 
-        node1.add_backref(node2['ids'][0])
-        node2.add_backref(node1['ids'][0])
+        if from_doc == to_doc:
+            node['refid'] = mutual_nodes[other_node][2]
+        else:
+            node['refuri'] = app.builder.get_relative_uri(from_doc, to_doc)
+            node['refuri'] += '#' + mutual_nodes[other_node][2]
 
 
 def process_backlink_nodes(app: Sphinx, doctree, fromdocname) -> None:
@@ -404,22 +427,19 @@ def process_backlink_nodes(app: Sphinx, doctree, fromdocname) -> None:
     fromdocname
         The name of the document calling this function.
     """
-    backlinks = {}
+    domain: InlineReferenceDomain = app.builder.env.get_domain('iref')
+
     for node in doctree.findall(backlink):
-        backlinks[node['ids'][0]] = node
-
-    for ref_node in doctree.findall(id_reference):
         try:
-            bln = backlinks[ref_node['refid']]
+            backlinks = domain.data['loose_refs'][node['ids'][0]]
         except KeyError:
-            try:
-                bln = backlinks[ref_node['refuri'].split('#')[-1]]
-            except KeyError:
-                warnings.warn(f'Reference "{ref_node["refid"]}" does not point to a known node.',
-                              Warning)
-                continue
+            # This backlink has no :iref:ref: pointing to it.
+            continue
 
-        bln.add_backref(ref_node['ids'][0])
+        for to_doc, ref_id, _ in backlinks:
+            backref = app.builder.get_relative_uri(fromdocname, to_doc) + '#' + ref_id
+
+            node.add_backref(backref)
 
 
 def setup(app: Sphinx) -> ExtensionMetadata:
@@ -448,6 +468,6 @@ def setup(app: Sphinx) -> ExtensionMetadata:
 
     return {
         'version': '0.1',
-        'parallel_read_safe': True,
+        'parallel_read_safe': False,
         'parallel_write_safe': True,
     }
