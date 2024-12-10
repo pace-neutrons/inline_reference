@@ -235,40 +235,6 @@ class BackLink(Target):
     code = 'backlink'
 
 
-class LooseRefIndex(Index):
-    """A custom index that creates an index of references."""
-    name = 'looseref'
-    localname = 'Loose Reference Index'
-    shortname = 'looseref'
-
-    def generate(self, docnames=None):
-        content = defaultdict(list)
-
-        # sort the list of code_blocks in alphabetical order
-        code_blocks = self.domain.get_objects()
-        code_blocks = sorted(code_blocks, key=lambda recipe: recipe[0])
-
-        # generate the expected output, shown below, from the above using the
-        # first letter of the recipe as a key to group thing
-        #
-        # name, subtype, docname, anchor, extra, qualifier, description
-        for _name, dispname, typ, docname, anchor, _priority in code_blocks:
-            content[dispname[0].lower()].append((
-                dispname,
-                0,
-                docname,
-                anchor,
-                docname,
-                '',
-                typ,
-            ))
-
-        # convert the dict to the sorted list of tuples expected
-        content = sorted(content.items())
-
-        return content, True
-
-
 class InlineReferenceDomain(Domain):
     name = 'iref'
     label = 'Inline Reference'
@@ -277,9 +243,6 @@ class InlineReferenceDomain(Domain):
         'target': ReferenceTarget(),
         'backlink': BackLink(),
         'mref': MutualReference(),
-    }
-    indices = {
-        LooseRefIndex,
     }
     initial_data = {
         'targets': [],
