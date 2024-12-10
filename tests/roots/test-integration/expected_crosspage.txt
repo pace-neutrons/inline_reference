@@ -8,3 +8,5 @@ Testing:
 * mref to other document
 
 * "bid4"
+
+ENDOFFILE!!!!!!!!!!!!!!!!!

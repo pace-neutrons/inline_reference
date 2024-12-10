@@ -28,10 +28,10 @@ def clean_up(text: str) -> list[str]:
     return out
 
 
-def remove_edges(lines: list[str]) -> list[str]:
+def remove_edges(lines: list[str], start: str) -> list[str]:
     i = 0
     for i, line in enumerate(lines):
-        if line == '<section id="title">':
+        if line == start:
             break
 
     j = -1
@@ -55,8 +55,17 @@ def test_integration_html(app, status):
     result_crosspage = clean_up((Path(app.srcdir) / "_build/html/test_crosspage.html").read_text())
     expected_crosspage = clean_up((root_dir / 'roots' / 'test-integration' / "expected_crosspage.html").read_text())
 
-    assert remove_edges(result) == remove_edges(expected)
-    assert remove_edges(result_crosspage) == remove_edges(expected_crosspage)
+    start1 = '<section id="title">'
+    start2 = '<section id="another-title">'
+
+    result, expected = remove_edges(result, start1), remove_edges(expected, start1)
+    result_crosspage, expected_crosspage = remove_edges(result_crosspage, start2), remove_edges(expected_crosspage, start2)
+
+    assert expected != ''
+    assert expected_crosspage != ''
+
+    assert result == expected
+    assert result_crosspage == expected_crosspage
 
 
 @pytest.mark.sphinx("text", testroot="integration")
