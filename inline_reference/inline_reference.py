@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from typing import TYPE_CHECKING
 import warnings
 
@@ -8,11 +7,10 @@ from docutils import nodes
 from docutils.nodes import Node
 
 from sphinx.application import Sphinx
-from sphinx.domains import Domain, Index
+from sphinx.domains import Domain
 from sphinx.roles import XRefRole
 from sphinx.util.typing import ExtensionMetadata
 from sphinx.util.docutils import SphinxRole
-from sphinx.util.nodes import make_refnode
 
 
 if TYPE_CHECKING:
@@ -24,19 +22,25 @@ class id_reference(nodes.reference):
     pass
 
 
-def make_id_refnode(
+class inline_reference(nodes.reference):
+    """A reference node. Required for custom LaTeX writer."""
+    pass
+
+
+def make_refnode(
     builder: Builder,
     fromdocname: str,
     todocname: str,
     targetid: str | None,
     child: nodes.Node | list[nodes.Node],
     title: str | None = None,
+    cls: type(nodes.reference) = nodes.reference,
 ) -> nodes.reference:
     """Shortcut to create a id_reference node."""
-    node = id_reference('', '', internal=True)
-    if fromdocname == todocname and targetid:
+    node = cls('', '', internal=True)
+    if targetid:
         node['refid'] = targetid
-    else:
+    if  fromdocname != todocname:
         if targetid:
             node['refuri'] = (
                 builder.get_relative_uri(fromdocname, todocname) + '#' + targetid
@@ -59,6 +63,17 @@ def depart_reference_node_default(self, node):
     self.depart_reference(node)
 
 
+def visit_reference_node_latex(self, node):
+    """Visit the `reference` node in the LaTeX builder."""
+    ref_id = str(self.idescape(node['refid']))
+    self.body.append(r'\hyperlink{' + ref_id + '}{')
+
+
+def depart_reference_node_latex(self, node):
+    """Depart the `reference` node in the LaTeX builder."""
+    self.body.append('}')
+
+
 class RegisteredXRefRole(XRefRole):
     def run(self) -> tuple[list[Node], list[nodes.system_message]]:
         _, signature = self.text.replace('>', '').split('<')
@@ -78,16 +93,17 @@ class mutual_ref(nodes.General,
 
 def visit_mutual_ref_node_latex(self, node):
     """Visits the `mutual_ref` node for the LaTeX builder."""
-    id = self.curfilestack[-1] + ':' + node['ids'][0]
-    escaped_id = str(self.idescape(id))
+    escaped_id = str(self.idescape(node['ids'][0]))
 
-    ref_id = str(self.idescape(self.curfilestack[-1] + ':' + node['refid']))
-    self.body.append(r'\hyperlink{' + ref_id + r'}{\hypertarget{' + escaped_id + r'}{')
+    ref_id = str(self.idescape(node['refid']))
+    self.body.append(r'\hyperlink{' + ref_id + r'}{')
+    visit_reference_target_node_latex(self, node)
 
 
 def depart_mutual_ref_node_latex(self, node):
     """Departs the `mutual_ref` node for the LaTeX builder."""
-    self.body.append(r'}}')
+    self.body.append(r'}')
+    depart_reference_target_node_latex(self, node)
 
 
 class MutualReference(SphinxRole):
@@ -133,12 +149,13 @@ def depart_reference_target_node_html(self, node):
 
 def visit_reference_target_node_latex(self, node):
     """Visit `reference_target`for LaTeX writer."""
-    self.body.append(self.hypertarget_to(node, False))
+    for id in node['ids']:
+        self.body.append(r'\hypertarget{' + str(self.idescape(id)) + '}{')
 
 
 def depart_reference_target_node_latex(self, node):
     """Depart `reference_target` for LaTeX writer."""
-    pass
+    self.body.append('}' * len(node['ids']))
 
 
 class backlink(nodes.TextElement, nodes.Targetable, nodes.Inline, nodes.BackLinkable):
@@ -174,11 +191,11 @@ def visit_backlink_node_latex(self, node):
     backrefs = node.get('backrefs', [])
 
     if len(backrefs) == 1:
-        node['refid'] = backrefs[0]
+        node['refid'] = backrefs[0].split('#', 1)[-1]
         visit_mutual_ref_node_latex(self, node)
     else:
-        id = str(self.idescape(self.curfilestack[-1] + ':' + node['ids'][0]))
-        self.body.append(r'\hypertarget{' + id + '}{')
+        for id in node['ids']:
+            self.body.append(r'\hypertarget{' + str(self.idescape(id)) + '}{')
 
 
 def depart_backlink_node_latex(self, node):
@@ -188,12 +205,16 @@ def depart_backlink_node_latex(self, node):
     if len(backrefs) == 1:
         depart_mutual_ref_node_latex(self, node)
     else:
-        elements = []
-        for i, ref in enumerate(backrefs):
-            ref_id = str(self.idescape(self.curfilestack[-1] + ':' + ref))
-            elements.append(r'\hyperlink{' + ref_id + '}{' + str(i) + '}')
+        self.body.append('}' * len(node['ids']))
 
-        self.body.append('}_{' + ','.join(elements) + '}')
+        if len(backrefs) > 1:
+            elements = []
+            for i, ref in enumerate(backrefs):
+                # resolve_backlinks prepends each backref with %docname# - we want to remove this
+                ref_id = str(self.idescape(ref.split('#', 1)[-1]))
+                elements.append(r'\hyperlink{' + ref_id + '}{' + str(i) + '}')
+
+            self.body.append(r'\texorpdfstring{\textsubscript{' + ','.join(elements) + '}}{}')
 
 
 class Target(SphinxRole):
@@ -262,12 +283,11 @@ class InlineReferenceDomain(Domain):
             warnings.warn(f'Reference "{target}" not found.', Warning)
             return None
 
-        # todocname, targ, signature, match_type = match[-1]
         signature, match_type, todocname = match[-1]
 
         # Backlinks require the id param in order to be able to be linked back to
         if match_type == 'backlink':
-            reference_node = make_id_refnode(builder, fromdocname, todocname, signature, contnode, signature)
+            reference_node = make_refnode(builder, fromdocname, todocname, signature, contnode, signature, id_reference)
 
             for i, (from_doc, id, assigned) in enumerate(self.data['loose_refs'][signature]):
                 if from_doc == fromdocname and not assigned:
@@ -282,7 +302,7 @@ class InlineReferenceDomain(Domain):
 
             self.data['loose_refs'][signature][i] = (from_doc, id, True)
         else:
-            reference_node = make_refnode(builder, fromdocname, todocname, signature, contnode, signature)
+            reference_node = make_refnode(builder, fromdocname, todocname, signature, contnode, signature, inline_reference)
 
         return reference_node
 
@@ -353,10 +373,9 @@ def process_mutual_reference_nodes(app: Sphinx, doctree, fromdocname) -> None:
             continue
 
         from_doc, to_doc = mutual_nodes[this_node][1], mutual_nodes[other_node][1]
+        node['refid'] = mutual_nodes[other_node][2]
 
-        if from_doc == to_doc:
-            node['refid'] = mutual_nodes[other_node][2]
-        else:
+        if from_doc != to_doc:
             node['refuri'] = app.builder.get_relative_uri(from_doc, to_doc)
             node['refuri'] += '#' + mutual_nodes[other_node][2]
 
@@ -396,6 +415,10 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     """Plugs the extension into Sphinx."""
     app.add_domain(InlineReferenceDomain)
 
+    app.add_node(inline_reference,
+                 html=(visit_reference_node_default, depart_reference_node_default),
+                 text=(visit_reference_node_default, depart_reference_node_default),
+                 latex=(visit_reference_node_latex, depart_reference_node_latex))
     app.add_node(id_reference,
                  html=(visit_reference_node_default, depart_reference_node_default),
                  text=(visit_reference_node_default, depart_reference_node_default),
@@ -406,7 +429,7 @@ def setup(app: Sphinx) -> ExtensionMetadata:
                  latex=(visit_reference_target_node_latex, depart_reference_target_node_latex))
     app.add_node(mutual_ref,
                  html=(visit_reference_node_default, depart_reference_node_default),
-                 latex=(visit_reference_node_default, depart_reference_node_default),
+                 latex=(visit_mutual_ref_node_latex, depart_mutual_ref_node_latex),
                  text=(visit_reference_node_default, depart_reference_node_default))
     app.add_node(backlink,
                  html=(visit_backlink_node_html, depart_backlink_node_html),
