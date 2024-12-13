@@ -378,11 +378,11 @@ def depart_backlink_node_html(self: nodes.NodeVisitor, node: backlink) -> None:
     """
     backrefs = node.get('backrefs', [])
 
-    if len(backrefs) == 1:
-        self.body.append('</a>')
-    elif len(backrefs) > 1:
+    if len(backrefs) > 1:
         elements = [f'<a href={ref}><sub>{i}</sub></a>' for i, ref in enumerate(backrefs)]
         self.body.append(','.join(elements))
+    else:
+        self.body.append('</a>')
 
 
 def visit_backlink_node_latex(self: nodes.NodeVisitor, node: backlink) -> None:
