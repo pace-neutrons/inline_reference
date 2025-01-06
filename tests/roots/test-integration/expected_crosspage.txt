@@ -3,10 +3,10 @@ Another Title
 
 Testing:
 
-* "id1"
+* id1
 
 * mref to other document
 
-* "bid4"
+* bid4
 
 ENDOFFILE!!!!!!!!!!!!!!!!!

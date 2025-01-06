@@ -182,8 +182,41 @@ def make_refnode(
             node['refuri'] = builder.get_relative_uri(fromdocname, todocname)
     if title:
         node['reftitle'] = title
-    node += child
+    node += replace_literal_nodes(child)
     return node
+
+
+def replace_literal_nodes(children: nodes.Node | list[nodes.Node]) -> nodes.Node | list[nodes.Node]:
+    """
+    Replaces all `docutils.nodes.literal` nodes amond `children` with `docutils.nodes.Text` nodes.
+
+    This function is used to correct the formatting of hyperlinks, which are at some point
+    (incorrectly) formatted by sphinx as literals.
+
+    Parameters
+    ----------
+    children
+        The node or nodes that need to be checked.
+
+    Returns
+    -------
+    new_children
+        The children with the ``literal`` nodes replaced by ``Text`` nodes.
+    """
+    if isinstance(children, list):
+        new = []
+        for child in children:
+            if isinstance(child, nodes.literal):
+                new.append(nodes.Text(child.astext()))
+            else:
+                new.append(child)
+
+        return new
+    else:
+        if isinstance(children, nodes.literal):
+            return nodes.Text(children.astext())
+        else:
+            return children
 
 
 def visit_reference_node_default(self: nodes.NodeVisitor, node: nodes.Node) -> None:
@@ -236,9 +269,7 @@ class RegisteredXRefRole(XRefRole):
         _, signature = self.text.replace('>', '').split('<')
         domain: InlineReferenceDomain = self.env.get_domain('iref')
         domain.add_loose_reference(self.env.docname, signature)
-        tmp = super().run()
-        print(tmp)
-        return tmp
+        return super().run()
 
 
 class mutual_ref(nodes.General,
