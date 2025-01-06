@@ -73,5 +73,6 @@ Contents
 
     installation
     useage
+    rst_reference
     api
 
