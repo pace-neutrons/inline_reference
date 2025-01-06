@@ -207,7 +207,7 @@ def depart_reference_node_default(self: nodes.NodeVisitor, node: nodes.Node) -> 
 
 
 def visit_reference_node_latex(self: nodes.NodeVisitor, node: nodes.reference) -> None:
-    """
+    r"""
     Visit the `inline_reference` node in the LaTeX builder.
 
     Creates a LaTeX hyperlink with no hypertarget attached. Should create similar effect to the
@@ -236,7 +236,9 @@ class RegisteredXRefRole(XRefRole):
         _, signature = self.text.replace('>', '').split('<')
         domain: InlineReferenceDomain = self.env.get_domain('iref')
         domain.add_loose_reference(self.env.docname, signature)
-        return super().run()
+        tmp = super().run()
+        print(tmp)
+        return tmp
 
 
 class mutual_ref(nodes.General,
@@ -324,7 +326,7 @@ def depart_reference_target_node_html(self: nodes.NodeVisitor, _: reference_targ
 
 
 def visit_reference_target_node_latex(self: nodes.NodeVisitor, node: reference_target) -> None:
-    """
+    r"""
     Visit `reference_target`for LaTeX writer.
 
     Creates a ``\hypertarget`` value for each ``id`` in the `node`, with the text that appears in
@@ -386,7 +388,7 @@ def depart_backlink_node_html(self: nodes.NodeVisitor, node: backlink) -> None:
 
 
 def visit_backlink_node_latex(self: nodes.NodeVisitor, node: backlink) -> None:
-    """
+    r"""
     Visit `backlink` for LaTeX writer.
 
     Similar to `visit_backlink_node_html`, if 0 or more than 1 backrefs exist in the `node`, simply
