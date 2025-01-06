@@ -104,13 +104,13 @@ created in the output.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-import warnings
 
 from docutils import nodes
 
 from sphinx.application import Sphinx
 from sphinx.domains import Domain
 from sphinx.roles import XRefRole
+from sphinx.util import logging
 from sphinx.util.typing import ExtensionMetadata
 from sphinx.util.docutils import SphinxRole
 
@@ -119,6 +119,9 @@ if TYPE_CHECKING:
     from sphinx.builders import Builder
     from sphinx.environment import BuildEnvironment
     from sphinx.addnodes import pending_xref, document
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class id_reference(nodes.reference):
@@ -559,7 +562,7 @@ class InlineReferenceDomain(Domain):
         ]
 
         if len(match) == 0:
-            warnings.warn(f'Reference "{target}" not found.', Warning)
+            LOGGER.warning(f'inline_reference: Reference "{target}" not found.')
             return None
 
         signature, match_type, todocname = match[-1]
@@ -678,11 +681,11 @@ def process_mutual_reference_nodes(app: Sphinx, doctree: document, fromdocname: 
         mutual_nodes = domain.data['mutual_refs'][anchor]
 
         if len(mutual_nodes) > 2:
-            warnings.warn(f'mutual reference "{anchor}" has more than two uses. This '
-                          f'could be because it was used more than twice, or because of issues '
-                          f'across multiple files.', Warning)
+            LOGGER.warning(f'inline_reference: mutual reference "{anchor}" has more than two uses. '
+                           f'This could be because it was used more than twice, or because of '
+                           f'issues across multiple files.')
         elif len(mutual_nodes) < 2:
-            warnings.warn(f'mutual reference "{anchor}" does not have a pair', Warning)
+            LOGGER.warning(f'inline_reference: mutual reference "{anchor}" does not have a pair')
             continue
 
         if mutual_nodes[0][2] == node['ids'][0]:
@@ -690,9 +693,9 @@ def process_mutual_reference_nodes(app: Sphinx, doctree: document, fromdocname: 
         elif mutual_nodes[1][2] == node['ids'][0]:
             this_node, other_node = 1, 0
         else:
-            warnings.warn(f'mutual reference "{anchor}" is not mutually matching up: both '
-                          f'{mutual_nodes[0][2]} and {mutual_nodes[0][2]} != {node["ids"][0]}',
-                          Warning)
+            LOGGER.warning(f'inline_reference: mutual reference "{anchor}" is not mutually '
+                           f'matching up: both {mutual_nodes[0][2]} and {mutual_nodes[0][2]} != '
+                           f'{node["ids"][0]}')
             continue
 
         from_doc, to_doc = mutual_nodes[this_node][1], mutual_nodes[other_node][1]
