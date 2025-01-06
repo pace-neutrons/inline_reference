@@ -358,7 +358,7 @@ def depart_reference_target_node_html(self: nodes.NodeVisitor, _: reference_targ
 
 def visit_reference_target_node_latex(self: nodes.NodeVisitor, node: reference_target) -> None:
     r"""
-    Visit `reference_target`for LaTeX writer.
+    Visit `reference_target` for LaTeX writer.
 
     Creates a ``\hypertarget`` value for each ``id`` in the `node`, with the text that appears in
     the document being the text in the node.
