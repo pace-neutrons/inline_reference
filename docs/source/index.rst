@@ -27,12 +27,16 @@ What can it do?
 Roles
 -----
 
-This extension provides a new domain (``:iref:``) which exposes four roles that can be uses anywhere
+This extension provides a new domain (``:iref:``) which exposes four roles that can be used anywhere
 in text:
 
-* ``:iref:ref:`` which works similar to the base ``:ref:`` role, but works with the other new roles;
+* ``:iref:ref:`` which works similar to the
+  `sphinx <https://www.sphinx-doc.org/en/master/usage/referencing.html#role-ref>`_
+  ``:ref:`` role, but works with (only) the other new roles.
 
-* ``:iref:target:`` which is a role version of ``.. _ref::`` and so can be used anywhere.
+* ``:iref:target:`` which is a role version of the
+  `sphinx <https://www.sphinx-doc.org/en/master/usage/referencing.html#role-ref>`_
+  ``.. _ref::`` and so can be used anywhere.
 
 * ``:iref:backlink:`` which is similar to ``:iref:target:``, but it additionally creates a link to
   each ``:iref:ref:`` that links to it.
@@ -65,8 +69,9 @@ Contents
 ========
 
 .. toctree::
-   :maxdepth: 1
+    :maxdepth: 1
 
-   installation
-   api
+    installation
+    useage
+    api
 

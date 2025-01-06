@@ -1,5 +1,8 @@
-API Reference
-*************
+Developer Reference
+*******************
+
+Python API Reference
+====================
 
 .. automodule:: inline_reference.inline_reference
     :members:
