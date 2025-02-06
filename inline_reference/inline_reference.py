@@ -111,7 +111,6 @@ from sphinx.application import Sphinx
 from sphinx.domains import Domain
 from sphinx.roles import XRefRole
 from sphinx.util import logging
-from sphinx.util.typing import ExtensionMetadata
 from sphinx.util.docutils import SphinxRole
 
 
@@ -119,6 +118,7 @@ if TYPE_CHECKING:
     from sphinx.builders import Builder
     from sphinx.environment import BuildEnvironment
     from sphinx.addnodes import pending_xref, document
+    from sphinx.util.typing import ExtensionMetadata
 
 
 LOGGER = logging.getLogger(__name__)
