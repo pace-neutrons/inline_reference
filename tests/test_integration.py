@@ -20,7 +20,7 @@ def clean_up(text: str) -> list[str]:
     for i, line in enumerate(text):
         line = line.replace('\n', '').strip()
         if line:
-            if '<a class="headerlink" href="' in line and 'title="Link to this' in line:
+            if '(16505646556160)' in line:
                 continue
 
             out.append(line)
@@ -83,8 +83,8 @@ def test_integration_html(app, status):
     result_crosspage = clean_up((Path(app.srcdir) / "_build/html/test_crosspage.html").read_text())
     expected_crosspage = clean_up((root_dir / 'roots' / 'test-integration' / "expected_crosspage.html").read_text())
 
-    start1 = '<section id="title">'
-    start2 = '<section id="another-title">'
+    start1 = '<section id="title-16505646556160">'
+    start2 = '<section id="another-title-16505646556160">'
 
     result, expected = remove_edges_html(result, start1), remove_edges_html(expected, start1)
     result_crosspage, expected_crosspage = remove_edges_html(result_crosspage, start2), remove_edges_html(expected_crosspage, start2)
