@@ -15,6 +15,26 @@ description = "Sphinx extension for creating cross-reference links to arbitrary 
 readme = "README.md"
 license = {file = "LICENSE"}
 
+keywords = [
+    "Python",
+    "docs",
+    "documentation",
+    "sphinx",
+    "sphinx-extension",
+    "inline cross-reference",
+    "inline reference",
+]
+
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: Sphinx :: Domain",
+    "Framework :: Sphinx :: Extension",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python",
+    "Topic :: Documentation :: Sphinx"
+]
+
 dependencies = [
     "sphinx >= 8.1.3",
 ]
