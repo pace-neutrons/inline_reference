@@ -19,11 +19,17 @@ extensions = [
     'inline_reference',
     'numpydoc',
     'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
 ]
 
 templates_path = ['_templates']
 exclude_patterns = []
 
+
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'sphinx': ('http://sphinx-doc.org/', None),
+}
 
 
 # -- Options for HTML output -------------------------------------------------
