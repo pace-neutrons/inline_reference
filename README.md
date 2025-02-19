@@ -79,13 +79,19 @@ For more information, see the [documentation](https://pace-neutrons.github.io/in
 
 ## Installation
 
-At the moment, the only way is to install manually via pip, either directly from GitHub:
+Inline reference can be installed via pip:
+
+```
+pip install inline_reference
+```
+
+or manually from GitHub:
 
 ```
 pip install git+https://github.com/pace-neutrons/inline_reference
 ```
 
-or from a local copy:
+or a local copy:
 
 ```
 git clone https://github.com/pace-neutrons/inline_reference.git
