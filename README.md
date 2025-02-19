@@ -75,6 +75,8 @@ There can be multiple ``:iref:ref:`` roles pointing to the same ``:iref:target:`
     instead of the literal directive.
 ```
 
+For more information, see the [documentation](https://pace-neutrons.github.io/inline_reference).
+
 ## Installation
 
 At the moment, the only way is to install manually via pip, either directly from GitHub:
