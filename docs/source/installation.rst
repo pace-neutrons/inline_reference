@@ -7,8 +7,15 @@ Installation
 Pip
 ---
 
-Currently, the only way to install the extension is by ``pip`` from GitHub. This can be done either
-directly from GitHub::
+The extension can be installed using pip::
+
+    pip install inline_reference
+
+
+Manual installation
+^^^^^^^^^^^^^^^^^^^
+
+Alternatively, it can be installed manually, either from GitHub::
 
     pip install git+https://github.com/pace-neutrons/inline_reference
 
