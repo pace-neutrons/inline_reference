@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Turanyi
+    given-names: Rastislav
+    email: rastislav.turanyi@stfc.ac.uk
+title: "inline_reference"
+repository-code: https://github.com/pace-neutrons/inline_reference
+license: GPL-3.0
