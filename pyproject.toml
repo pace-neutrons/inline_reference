@@ -50,3 +50,6 @@ docs = [
 
 [project.urls]
 Repository = "https://github.com/pace-neutrons/inline_reference"
+Documentation = "https://pace-neutrons.github.io/inline_reference/"
+Homepage = "https://pace-neutrons.github.io/inline_reference/"
+Issues = "https://github.com/pace-neutrons/inline_reference/issues"
